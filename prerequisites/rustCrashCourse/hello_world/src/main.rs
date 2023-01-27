@@ -1,6 +1,7 @@
 mod print;
 mod vars;
 mod types;
+mod strings;
 
 use colored::*;
 
@@ -11,4 +12,6 @@ fn main() {
     vars::run();
     println!("\n{}", "types:".yellow());
     types::run();
+    println!("\n{}", "strings:".yellow());
+    strings::run();
 }
