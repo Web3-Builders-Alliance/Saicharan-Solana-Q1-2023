@@ -6,6 +6,7 @@ mod tuples;
 mod arrays;
 mod vectors;
 mod conditionals;
+mod loops;
 
 use colored::*;
 
@@ -26,4 +27,6 @@ fn main() {
     vectors::run();
     println!("\n{}", "conditionals:".yellow());
     conditionals::run();
+    println!("\n{}", "loops:".yellow());
+    loops::run();
 }
