@@ -1,0 +1,6 @@
+{
+  "rust-analyzer.check.invocationLocation": "workspace",
+  "rust-analyzer.linkedProjects": [
+    "/Users/saicharanpogul/Desktop/Practice/Solana/wba/prerequisites/rustCrashCourse/hello_world/Cargo.toml"
+  ]
+}

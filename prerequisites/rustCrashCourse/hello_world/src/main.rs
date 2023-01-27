@@ -5,6 +5,7 @@ mod strings;
 mod tuples;
 mod arrays;
 mod vectors;
+mod conditionals;
 
 use colored::*;
 
@@ -23,4 +24,6 @@ fn main() {
     arrays::run();
     println!("\n{}", "vectors:".yellow());
     vectors::run();
+    println!("\n{}", "conditionals:".yellow());
+    conditionals::run();
 }
