@@ -11,6 +11,7 @@ mod functions;
 mod pointers;
 mod structs;
 mod enums;
+mod cli;
 
 use colored::*;
 
@@ -41,4 +42,6 @@ fn main() {
     structs::run();
     println!("\n{}", "enums:".yellow());
     enums::run();
+    println!("\n{}", "cli:".yellow());
+    cli::run();
 }
