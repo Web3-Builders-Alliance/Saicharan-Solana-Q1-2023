@@ -10,6 +10,7 @@ mod loops;
 mod functions;
 mod pointers;
 mod structs;
+mod enums;
 
 use colored::*;
 
@@ -38,4 +39,6 @@ fn main() {
     pointers::run();
     println!("\n{}", "structs:".yellow());
     structs::run();
+    println!("\n{}", "enums:".yellow());
+    enums::run();
 }
