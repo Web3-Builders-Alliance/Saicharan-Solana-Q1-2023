@@ -9,6 +9,7 @@ mod conditionals;
 mod loops;
 mod functions;
 mod pointers;
+mod structs;
 
 use colored::*;
 
@@ -35,4 +36,6 @@ fn main() {
     functions::run();
     println!("\n{}", "pointers:".yellow());
     pointers::run();
+    println!("\n{}", "structs:".yellow());
+    structs::run();
 }
