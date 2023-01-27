@@ -3,6 +3,7 @@ mod vars;
 mod types;
 mod strings;
 mod tuples;
+mod arrays;
 
 use colored::*;
 
@@ -17,4 +18,6 @@ fn main() {
     strings::run();
     println!("\n{}", "tuples:".yellow());
     tuples::run();
+    println!("\n{}", "arrays:".yellow());
+    arrays::run();
 }
