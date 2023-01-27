@@ -8,6 +8,7 @@ mod vectors;
 mod conditionals;
 mod loops;
 mod functions;
+mod pointers;
 
 use colored::*;
 
@@ -32,4 +33,6 @@ fn main() {
     loops::run();
     println!("\n{}", "functions:".yellow());
     functions::run();
+    println!("\n{}", "pointers:".yellow());
+    pointers::run();
 }
