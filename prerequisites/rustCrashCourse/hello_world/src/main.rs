@@ -7,6 +7,7 @@ mod arrays;
 mod vectors;
 mod conditionals;
 mod loops;
+mod functions;
 
 use colored::*;
 
@@ -29,4 +30,6 @@ fn main() {
     conditionals::run();
     println!("\n{}", "loops:".yellow());
     loops::run();
+    println!("\n{}", "functions:".yellow());
+    functions::run();
 }
