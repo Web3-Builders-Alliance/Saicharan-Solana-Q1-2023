@@ -4,6 +4,7 @@ mod types;
 mod strings;
 mod tuples;
 mod arrays;
+mod vectors;
 
 use colored::*;
 
@@ -20,4 +21,6 @@ fn main() {
     tuples::run();
     println!("\n{}", "arrays:".yellow());
     arrays::run();
+    println!("\n{}", "vectors:".yellow());
+    vectors::run();
 }
