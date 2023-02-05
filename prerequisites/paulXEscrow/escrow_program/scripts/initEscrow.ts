@@ -15,9 +15,8 @@ import {
   TransactionInstruction,
 } from "@solana/web3.js";
 import BN from "bn.js";
+import { connection, createAndSendV0Tx, getUrls, NETWORK } from ".";
 import { ESCROW_ACCOUNT_DATA_LAYOUT, EscrowLayout } from "./layout";
-
-const connection = new Connection("http://localhost:8899", "finalized");
 
 export const initEscrow = async (
   initializerAccount: Keypair,
@@ -47,10 +46,10 @@ export const initEscrow = async (
     newAccountPubkey: tempTokenAccount.publicKey,
   });
   const initTempAccountIx = createInitializeAccountInstruction(
-    TOKEN_PROGRAM_ID,
-    XTokenMintAccountPubkey,
     tempTokenAccount.publicKey,
-    initializerAccount.publicKey
+    XTokenMintAccountPubkey,
+    initializerAccount.publicKey,
+    TOKEN_PROGRAM_ID
   );
   const transferXTokensToTempAccIx = createTransferInstruction(
     initializerXTokenAccountPubkey,
@@ -104,11 +103,12 @@ export const initEscrow = async (
     createEscrowAccountIx,
     initEscrowIx
   );
-  await sendAndConfirmTransaction(connection, tx, [
+  const sig = await sendAndConfirmTransaction(connection, tx, [
     initializerAccount,
     tempTokenAccount,
     escrowAccount,
   ]);
+  console.log("Signature:", getUrls(NETWORK, sig, "tx").explorer);
 
   await new Promise((resolve) => setTimeout(resolve, 1000));
 
