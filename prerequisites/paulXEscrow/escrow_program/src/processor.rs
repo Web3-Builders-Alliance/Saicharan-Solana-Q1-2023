@@ -1,28 +1,32 @@
+use crate::{error::EscrowError, instruction::EscrowInstruction, state::Escrow};
 use solana_program::{
-    account_info::{AccountInfo, next_account_info},
+    account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
-    program_error::ProgramError,
     msg,
-    pubkey::Pubkey, rent::Rent, sysvar::Sysvar, program_pack::{Pack, IsInitialized}, program::{invoke, invoke_signed},
+    program::{invoke, invoke_signed},
+    program_error::ProgramError,
+    program_pack::{IsInitialized, Pack},
+    pubkey::Pubkey,
+    rent::Rent,
+    sysvar::Sysvar,
 };
-use spl_token::state::{Account as TokenAccount};
-use crate::{
-    instruction::EscrowInstruction, 
-    error::EscrowError, 
-    state::Escrow,
-};
+use spl_token::state::Account as TokenAccount;
 
 pub struct Processor;
 
 impl Processor {
-    pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], instruction_data: &[u8]) -> ProgramResult {
+    pub fn process(
+        program_id: &Pubkey,
+        accounts: &[AccountInfo],
+        instruction_data: &[u8],
+    ) -> ProgramResult {
         let instruction = EscrowInstruction::unpack(instruction_data)?;
 
         match instruction {
             EscrowInstruction::InitEscrow { amount } => {
                 msg!("Instruction: InitEscrow");
                 Self::process_init_escrow(accounts, amount, program_id)
-            },
+            }
             EscrowInstruction::Exchange { amount } => {
                 msg!("Instruction: Exchange");
                 Self::process_exchange(accounts, amount, program_id)
@@ -122,7 +126,9 @@ impl Processor {
             return Err(ProgramError::InvalidAccountData);
         }
 
-        if escrow_info.initializer_token_to_receive_account_pubkey != *initializers_token_to_receive_account.key {
+        if escrow_info.initializer_token_to_receive_account_pubkey
+            != *initializers_token_to_receive_account.key
+        {
             return Err(ProgramError::InvalidAccountData);
         }
 
@@ -172,7 +178,7 @@ impl Processor {
             pdas_temp_token_account.key,
             initializers_main_account.key,
             &pda,
-            &[&pda]
+            &[&pda],
         )?;
         msg!("Calling the token program to close pda's temp account...");
         invoke_signed(
@@ -186,12 +192,12 @@ impl Processor {
             &[&[&b"escrow"[..], &[bump_seed]]],
         )?;
         msg!("Closing the escrow account...");
-        **initializers_main_account.lamports.borrow_mut() = initializers_main_account.lamports()
-        .checked_add(escrow_account.lamports())
-        .ok_or(EscrowError::AmountOverflow)?;
+        **initializers_main_account.lamports.borrow_mut() = initializers_main_account
+            .lamports()
+            .checked_add(escrow_account.lamports())
+            .ok_or(EscrowError::AmountOverflow)?;
         **escrow_account.lamports.borrow_mut() = 0;
         *escrow_account.try_borrow_mut_data()? = &mut [];
         Ok(())
     }
-
 }

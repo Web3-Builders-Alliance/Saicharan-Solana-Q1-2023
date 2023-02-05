@@ -3,6 +3,7 @@
   "rust-analyzer.linkedProjects": [
     "prerequisites/rustCrashCourse/hello_world/Cargo.toml",
     "prerequisites/paulXEscrow/escrow_program/Cargo.toml",
-    "cluster1/codeChallenges/timeLockPaulXEscrow/escrow_program/Cargo.toml"
+    "cluster1/codeChallenges/timeLockPaulXEscrow/escrow_program/Cargo.toml",
+    "cluster1/codeChallenges/newIxs/escrow_program/Cargo.toml"
   ]
 }

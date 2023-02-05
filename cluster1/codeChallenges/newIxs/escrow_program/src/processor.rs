@@ -32,6 +32,14 @@ impl Processor {
                 msg!("Instruction: Exchange");
                 Self::process_exchange(accounts, amount, program_id)
             }
+            EscrowInstruction::Cancel {} => {
+                msg!("Instruction: Cancel");
+                Self::process_cancel(accounts, program_id)
+            }
+            EscrowInstruction::ResetTimeLock {} => {
+                msg!("Instruction: ResetTimeLock");
+                Self::process_reset_time_lock(accounts, program_id)
+            }
         }
     }
 
@@ -42,9 +50,6 @@ impl Processor {
     ) -> ProgramResult {
         let account_info_iter = &mut accounts.iter();
         let initializer = next_account_info(account_info_iter)?;
-        let slot = Clock::get()?.slot;
-        let unlock_time = slot.checked_add(100).unwrap();
-        let time_out = unlock_time.checked_add(1000).unwrap();
 
         if !initializer.is_signer {
             return Err(ProgramError::MissingRequiredSignature);
@@ -68,8 +73,6 @@ impl Processor {
         escrow_info.temp_token_account_pubkey = *temp_token_account.key;
         escrow_info.initializer_token_to_receive_account_pubkey = *token_to_receive_account.key;
         escrow_info.expected_amount = amount;
-        escrow_info.unlock_time = unlock_time;
-        escrow_info.time_out = time_out;
         Escrow::pack(escrow_info, &mut escrow_account.try_borrow_mut_data()?)?;
         let (pda, _bump_seed) = Pubkey::find_program_address(&[b"escrow"], program_id);
         let token_program = next_account_info(account_info_iter)?;
@@ -100,7 +103,6 @@ impl Processor {
     ) -> ProgramResult {
         let account_info_iter = &mut accounts.iter();
         let taker = next_account_info(account_info_iter)?;
-        let slot = Clock::get()?.slot;
 
         if !taker.is_signer {
             return Err(ProgramError::MissingRequiredSignature);
@@ -124,14 +126,6 @@ impl Processor {
         let escrow_account = next_account_info(account_info_iter)?;
 
         let escrow_info = Escrow::unpack(&escrow_account.try_borrow_data()?)?;
-
-        if !slot.gt(&escrow_info.unlock_time) {
-            return Err(EscrowError::InvalidUnlockTime.into());
-        }
-
-        if slot.gt(&escrow_info.time_out) {
-            return Err(EscrowError::InvalidTimeOut.into());
-        }
 
         if escrow_info.temp_token_account_pubkey != *pdas_temp_token_account.key {
             return Err(ProgramError::InvalidAccountData);
@@ -207,12 +201,141 @@ impl Processor {
             &[&[&b"escrow"[..], &[bump_seed]]],
         )?;
         msg!("Closing the escrow account...");
-        **initializers_main_account.lamports.borrow_mut() = initializers_main_account
+        **initializers_main_account.try_borrow_mut_lamports()? = initializers_main_account
             .lamports()
             .checked_add(escrow_account.lamports())
             .ok_or(EscrowError::AmountOverflow)?;
-        **escrow_account.lamports.borrow_mut() = 0;
+        **escrow_account.try_borrow_mut_lamports()? = 0;
         *escrow_account.try_borrow_mut_data()? = &mut [];
+        // **initializers_main_account.lamports.borrow_mut() = initializers_main_account
+        //     .lamports()
+        //     .checked_add(escrow_account.lamports())
+        //     .ok_or(EscrowError::AmountOverflow)?;
+        // **escrow_account.lamports.borrow_mut() = 0;
+        // *escrow_account.try_borrow_mut_data()? = &mut [];
+        Ok(())
+    }
+
+    fn process_cancel(accounts: &[AccountInfo], program_id: &Pubkey) -> ProgramResult {
+        let account_info_iter = &mut accounts.iter();
+        let initializer = next_account_info(account_info_iter)?;
+
+        if !initializer.is_signer {
+            return Err(ProgramError::MissingRequiredSignature);
+        }
+
+        let temp_token_account = next_account_info(account_info_iter)?;
+        let initializer_token_account = next_account_info(account_info_iter)?;
+        let escrow_account = next_account_info(account_info_iter)?;
+
+        if escrow_account.owner != program_id {
+            return Err(ProgramError::IllegalOwner);
+        }
+
+        if !escrow_account.is_writable {
+            return Err(ProgramError::InvalidAccountData);
+        }
+
+        let escrow_info = Escrow::unpack(&escrow_account.data.borrow_mut())?;
+
+        if !escrow_info.is_initialized {
+            return Err(ProgramError::UninitializedAccount);
+        }
+
+        if escrow_info.initializer_pubkey != *initializer.key {
+            return Err(ProgramError::InvalidAccountData);
+        }
+
+        let token_program = next_account_info(account_info_iter)?;
+        let pda_token_account_info = TokenAccount::unpack(&temp_token_account.try_borrow_data()?)?;
+        let (pda, bump_seed) = Pubkey::find_program_address(&[b"escrow"], program_id);
+
+        let transfer_to_initializer_ix = spl_token::instruction::transfer(
+            token_program.key,
+            temp_token_account.key,
+            initializer_token_account.key,
+            &pda,
+            &[&pda],
+            pda_token_account_info.amount,
+        )?;
+
+        msg!("Invoking token program to transfer back rent");
+        invoke_signed(
+            &transfer_to_initializer_ix,
+            &[
+                temp_token_account.clone(),
+                initializer_token_account.clone(),
+                temp_token_account.clone(),
+                token_program.clone(),
+            ],
+            &[&[&b"escrow"[..], &[bump_seed]]],
+        )?;
+
+        let close_escrow_token_account = spl_token::instruction::close_account(
+            token_program.key,
+            temp_token_account.key,
+            initializer.key,
+            &pda,
+            &[&pda],
+        )?;
+
+        msg!("Invoking token program to close escrow token account");
+        invoke_signed(
+            &close_escrow_token_account,
+            &[
+                temp_token_account.clone(),
+                initializer.clone(),
+                temp_token_account.clone(),
+                token_program.clone(),
+            ],
+            &[&[&b"escrow"[..], &[bump_seed]]],
+        )?;
+
+        msg!("Closing  the escrow account...");
+        **initializer.try_borrow_mut_lamports()? = initializer
+            .lamports()
+            .checked_add(escrow_account.lamports())
+            .ok_or(EscrowError::AmountOverflow)?;
+        **escrow_account.try_borrow_mut_lamports()? = 0;
+        *escrow_account.try_borrow_mut_data()? = &mut [];
+        // **initializer.lamports.borrow_mut() = initializer
+        //     .lamports()
+        //     .checked_add(escrow_account.lamports())
+        //     .ok_or(EscrowError::AmountOverflow)?;
+        // **escrow_account.lamports.borrow_mut() = 0;
+        // *escrow_account.try_borrow_mut_data()? = &mut [];
+        Ok(())
+    }
+
+    fn process_reset_time_lock(accounts: &[AccountInfo], program_id: &Pubkey) -> ProgramResult {
+        let account_info_iter = &mut accounts.iter();
+        let initializer = next_account_info(account_info_iter)?;
+        let slot = Clock::get()?.slot;
+        let unlock_time = slot.checked_add(100).unwrap();
+        let time_out = unlock_time.checked_add(1000).unwrap();
+
+        if !initializer.is_signer {
+            return Err(ProgramError::MissingRequiredSignature);
+        }
+
+        let escrow_account = next_account_info(account_info_iter)?;
+
+        if escrow_account.owner != program_id {
+            return Err(ProgramError::IllegalOwner);
+        }
+
+        if !escrow_account.is_writable {
+            return Err(ProgramError::InvalidAccountData);
+        }
+
+        let escrow_info = &mut Escrow::unpack(&escrow_account.try_borrow_data()?)?;
+
+        if escrow_info.initializer_pubkey != *initializer.key {
+            return Err(ProgramError::InvalidAccountData);
+        }
+
+        escrow_info.unlock_time = unlock_time;
+        escrow_info.time_out = time_out;
         Ok(())
     }
 }

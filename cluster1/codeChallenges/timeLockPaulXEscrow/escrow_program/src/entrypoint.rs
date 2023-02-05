@@ -1,9 +1,5 @@
 use solana_program::{
-    account_info::AccountInfo,
-    entrypoint,
-    entrypoint::ProgramResult,
-    msg,
-    pubkey::Pubkey,
+    account_info::AccountInfo, entrypoint, entrypoint::ProgramResult, msg, pubkey::Pubkey,
 };
 
 use crate::processor::Processor;
@@ -17,7 +13,7 @@ fn process_instruction(
 ) -> ProgramResult {
     msg!(
         "process_instructions: {}: {} accounts, data={:?}",
-        program_id, 
+        program_id,
         accounts.len(),
         instruction_data
     );
