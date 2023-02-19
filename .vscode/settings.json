@@ -4,6 +4,11 @@
     "prerequisites/rustCrashCourse/hello_world/Cargo.toml",
     "prerequisites/paulXEscrow/escrow_program/Cargo.toml",
     "cluster1/codeChallenges/timeLockPaulXEscrow/escrow_program/Cargo.toml",
-    "cluster1/codeChallenges/newIxs/escrow_program/Cargo.toml"
-  ]
+    "cluster1/codeChallenges/newIxs/escrow_program/Cargo.toml",
+    "cluster2/codeChallenges/deposit/programs/deposit/Cargo.toml",
+    "cluster2/codeChallenges/solana-escrow-anchor/programs/solana-escrow-anchor/Cargo.toml",
+    "cluster2/codeChallenges/mint-nft/programs/mint-nft/Cargo.toml"
+  ],
+  "rust-analyzer.diagnostics.experimental.enable": false,
+  "rust-analyzer.diagnostics.enable": true
 }
